@@ -1,0 +1,20 @@
+{
+  "name": "ibiosim-api-sync",
+  "version": "1.0.0",
+  "description": "API for iBioSim simulation tool. Runs synchronously.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Zach Sents",
+  "license": "ISC",
+  "dependencies": {
+    "archiver": "^5.3.1",
+    "chalk": "^5.0.1",
+    "express": "^4.18.1",
+    "express-form-data": "^2.0.18",
+    "morgan": "^1.10.0"
+  },
+  "type": "module"
+}
