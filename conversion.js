@@ -2,7 +2,7 @@ import { exec } from "child_process"
 import fs from "fs/promises"
 import path from "path"
 import { log, logSuccess } from "./logger.js"
-import { mkdirTough } from "./util.js"
+import { mkdirTough, wasConversionSuccessful } from "./util.js"
 
 
 export default function convert(inputFile, outputDir) {
@@ -15,7 +15,7 @@ export default function convert(inputFile, outputDir) {
         const outputFileName = 'module1.xml'
 
         // copy input file over to output dir
-        const copiedInputFile = path.join(outputDir, 'input.xml')
+        const copiedInputFile = path.join(outputDir, 'input' + path.extname(inputFile))
         await fs.copyFile(inputFile, copiedInputFile)
 
         // construct command
@@ -27,13 +27,27 @@ export default function convert(inputFile, outputDir) {
         log(`Executing conversion command:\n${command}`, 'grey', 'Conversion')
         exec(
             command,
-            (error, stdout, stderr) => {
+            async (error, stdout, stderr) => {
+
+                // handle errors from iBioSim
                 if (error) {
                     reject({ error, stderr })
                     return
                 }
+
+                const outputFile = path.join(outputDir, outputFileName)
+
+                // handle an invalid output from iBioSim
+                if (!await wasConversionSuccessful(outputFile)) {
+                    reject({
+                        message: "Conversion didn't produce expected output. This could be due to invalid parameters.",
+                        stdout
+                    })
+                    return
+                }
+
                 logSuccess("Conversion successful.", "Conversion")
-                resolve(path.join(outputDir, outputFileName))
+                resolve(outputFile)
             }
         )
     })

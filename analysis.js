@@ -1,9 +1,9 @@
 import { exec } from "child_process"
-import { mkdirTough, Parameter, wasAnalysisSuccessful } from "./util.js"
+import { doResultsContainNaN, mkdirTough, Parameter, wasAnalysisSuccessful } from "./util.js"
 import fs from "fs/promises"
 import path from "path"
 import convert from "./conversion.js"
-import { log, logSuccess } from "./logger.js"
+import { log, logSuccess, logWarning } from "./logger.js"
 
 
 export const ParameterMap = {
@@ -38,7 +38,13 @@ export default function analyze(inputFile, outputDir, parameters = {}) {
         let convertedFile
         if (path.extname(inputFile).toLowerCase() == '.sbol') {
             log('File is SBOL. Converting to SBML.', 'grey', 'Analysis')
-            convertedFile = await convert(copiedInputFile, outputDir)
+            try {
+                convertedFile = await convert(copiedInputFile, outputDir)
+            }
+            catch (err) {
+                reject(err)
+                return
+            }
         }
 
         // flatten parameters down to string for command line
@@ -71,6 +77,10 @@ export default function analyze(inputFile, outputDir, parameters = {}) {
                     reject("Analysis didn't produce expected output. This could be due to invalid parameters.")
                     return
                 }
+
+                // warn about possible issues
+                if (await doResultsContainNaN(outputDir))
+                    logWarning("Warning: results contain NaN. This may indicate an invalid model.", "Analysis")
 
                 // successful case
                 logSuccess("Analysis successful.", "Analysis")
