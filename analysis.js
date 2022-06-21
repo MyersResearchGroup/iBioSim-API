@@ -30,13 +30,13 @@ export default function analyze(inputFile, outputDir, parameters = {}) {
         await mkdirTough(outputDir)
 
         // copy input file over to output dir
-        const copiedInputFile = path.join(outputDir, 'input.xml')
+        const copiedInputFile = path.join(outputDir, 'input' + path.extname(inputFile))
         await fs.copyFile(inputFile, copiedInputFile)
 
         // convert input file if it's SBOL
         // TO DO: add smarter detection of SBOL files
         let convertedFile
-        if (inputFile.endsWith('.sbol')) {
+        if (path.extname(inputFile).toLowerCase() == '.sbol') {
             log('File is SBOL. Converting to SBML.', 'grey', 'Analysis')
             convertedFile = await convert(copiedInputFile, outputDir)
         }
