@@ -54,21 +54,21 @@ export default function sync(app) {
     // POST analyze
     app.post('/sync/analyze', async (req, res) => {
 
-        const { sbml, archive } = req.files
+        const { input, archive } = req.files
 
         // validate SBML file exists
-        if (!sbml)
+        if (!input)
             res.json({ error: "Must attach an SBML file with key 'sbml'." })
 
         // grab unique name we'll use from now on
-        const workingDir = path.join(os.tmpdir(), `analysis-${getBaseFileName(sbml.path)}`)
+        const workingDir = path.join(os.tmpdir(), `analysis-${getBaseFileName(input.path)}`)
         log(`Active directory: ${workingDir}`, 'yellow', 'Analysis')
 
         try {
             // analyze
             const analysisParameters = processParameters(req.body, AnalysisParameterMap)
             const analysisOutput = await analyze(
-                sbml.path,
+                input.path,
                 workingDir,
                 analysisParameters
             )
