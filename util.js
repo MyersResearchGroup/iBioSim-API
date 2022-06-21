@@ -1,6 +1,8 @@
 import fs from "fs/promises"
+import fsSync from "fs"
 import path from "path"
 import archiver from "archiver"
+
 
 /*
     File handling
@@ -91,4 +93,52 @@ export async function wasAnalysisSuccessful(analysisDir) {
     // iBioSim doesn't report as many errors as it should,
     // so we're gonna check if it actually produced something
     return await pathExists(path.join(analysisDir, 'statistics.txt'))
+}
+
+export function wasConversionSuccessful(convertedFile) {
+    // iBioSim doesn't report as many errors as it should,
+    // so we're gonna check if the converted file contains
+    // SBML tags
+    const stream = fsSync.createReadStream(convertedFile)
+
+    return new Promise((resolve, reject) => {
+
+        // search data for SBML tag
+        stream.on('data', chunk => {
+            if (('' + chunk).includes('<sbml')) {
+                resolve(true)
+                stream.destroy()    // end stream if found
+            }
+        })
+
+        // reject if we reach the end of the stream
+        stream.on('end', () => resolve(false))
+
+        // error handling
+        stream.on('error', err => reject(err))
+    })
+}
+
+export function doResultsContainNaN(analysisDir) {
+    // if an analysis completed but the input model
+    // wasn't quite right, it may produce a lot of NaNs
+    // in the output.
+    const stream = fsSync.createReadStream(path.join(analysisDir, 'run-1.tsd'))
+
+    return new Promise((resolve, reject) => {
+
+        // search data for NaN values
+        stream.on('data', chunk => {
+            if (('' + chunk).toLowerCase().includes('nan')) {
+                resolve(true)
+                stream.destroy()    // end stream if found
+            }
+        })
+
+        // reject if we reach the end of the stream
+        stream.on('end', () => resolve(false))
+
+        // error handling
+        stream.on('error', err => reject(err))
+    })
 }
