@@ -5,23 +5,26 @@ import { log, logSuccess } from "./logger.js"
 import { mkdirTough, wasConversionSuccessful } from "./util.js"
 
 
-export default function convert(inputFile, outputDir) {
+export default function convert(inputFile, workingDir) {
 
     return new Promise(async (resolve, reject) => {
 
-        // create output directory if it doesn't exist
+        // create working directory if it doesn't exist
+        await mkdirTough(workingDir)
+
+        // create output directory
+        const outputDir = path.join(workingDir, 'conversion')
+        const dummyFileName = 'output'
         await mkdirTough(outputDir)
 
-        const outputFileName = 'module1.xml'
-
-        // copy input file over to output dir
-        const copiedInputFile = path.join(outputDir, 'input' + path.extname(inputFile))
+        // copy input file over to working dir
+        const copiedInputFile = path.join(workingDir, 'input' + path.extname(inputFile))
         await fs.copyFile(inputFile, copiedInputFile)
 
         // construct command
         const command = `java -jar /iBioSim/conversion/target/iBioSim-conversion-3.1.0-SNAPSHOT-jar-with-dependencies.jar ` +
             `-i -l SBML -p "http://www.async.utah.edu/" -r "https://synbiohub.programmingbiology.org/" ` +
-            `-o ${outputFileName} -oDir ${outputDir} ${copiedInputFile}`
+            `-o ${dummyFileName} -oDir ${outputDir} ${copiedInputFile}`
 
         // execute conversion
         log(`Executing conversion command:\n${command}`, 'grey', 'Conversion')
@@ -35,7 +38,15 @@ export default function convert(inputFile, outputDir) {
                     return
                 }
 
-                const outputFile = path.join(outputDir, outputFileName)
+                // search for output file
+                const potentialOutputFiles = (await fs.readdir(outputDir)).filter(file => path.extname(file) == '.xml')
+                const outputFile = path.join(
+                    outputDir,
+                    potentialOutputFiles.length ?   // if there's no other output files
+                        potentialOutputFiles[0] :   // just send the dummy back
+                        dummyFileName
+                )
+                log(`Sending back file: ${outputFile}`, "grey", "Conversion")
 
                 // handle an invalid output from iBioSim
                 if (!await wasConversionSuccessful(outputFile)) {
