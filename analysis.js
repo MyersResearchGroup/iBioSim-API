@@ -30,6 +30,7 @@ export default function analyze(inputFile, outputDir, parameters = {}) {
         await mkdirTough(outputDir)
 
         // copy input file over to output dir
+        // TO DO: change .sbml files to .xml. iBioSim doesn't like .sbml files
         const copiedInputFile = path.join(outputDir, 'input' + path.extname(inputFile))
         await fs.copyFile(inputFile, copiedInputFile)
 
@@ -74,7 +75,10 @@ export default function analyze(inputFile, outputDir, parameters = {}) {
 
                 // handle an invalid output from iBioSim
                 if (!await wasAnalysisSuccessful(outputDir)) {
-                    reject("Analysis didn't produce expected output. This could be due to invalid parameters.")
+                    reject({
+                        message: "Analysis didn't produce expected output. This could be due to invalid parameters.",
+                        stdout
+                    })
                     return
                 }
 
