@@ -1,9 +1,12 @@
 import { exec } from "child_process"
-import { doResultsContainNaN, mkdirTough, Parameter, wasAnalysisSuccessful } from "./util.js"
+import os from "os"
+import { doResultsContainNaN, mkdirTough, Parameter, wasAnalysisSuccessful, zip } from "./util.js"
 import fs from "fs/promises"
+import fsSync from "fs"
 import path from "path"
 import convert from "./conversion.js"
 import { log, logSuccess, logWarning } from "./logger.js"
+import { pipeline } from "stream/promises"
 
 
 export const ParameterMap = {
@@ -22,16 +25,23 @@ export const ParameterMap = {
 }
 
 
-export default function analyze(inputFile, outputDir, parameters = {}) {
+export default function analyze(inputFile, {
+    workingDir = os.tmpdir(),
+    parameters = {},
+}) {
 
     return new Promise(async (resolve, reject) => {
 
-        // create output directory if it doesn't exist
+        // create working directory if it doesn't exist
+        await mkdirTough(workingDir)
+
+        // create output directory
+        const outputDir = path.join(workingDir, 'analysis')
         await mkdirTough(outputDir)
 
-        // copy input file over to output dir
+        // copy input file over to working dir
         // TO DO: change .sbml files to .xml. iBioSim doesn't like .sbml files
-        const copiedInputFile = path.join(outputDir, 'input' + path.extname(inputFile))
+        const copiedInputFile = path.join(workingDir, 'input' + path.extname(inputFile))
         await fs.copyFile(inputFile, copiedInputFile)
 
         // convert input file if it's SBOL
@@ -40,7 +50,11 @@ export default function analyze(inputFile, outputDir, parameters = {}) {
         if (path.extname(inputFile).toLowerCase() == '.sbol') {
             log('File is SBOL. Converting to SBML.', 'grey', 'Analysis')
             try {
-                convertedFile = await convert(copiedInputFile, outputDir)
+                // convert
+                convertedFile = (await convert(copiedInputFile, {
+                    workingDir,
+                    writeOutputFile: true
+                })).path
             }
             catch (err) {
                 reject(err)
@@ -86,10 +100,10 @@ export default function analyze(inputFile, outputDir, parameters = {}) {
                 if (await doResultsContainNaN(outputDir))
                     logWarning("Warning: results contain NaN. This may indicate an invalid model.", "Analysis")
 
-                // successful case
-                logSuccess("Analysis successful.", "Analysis")
-                // console.debug(stdout)
-                resolve(outputDir)
+                // zip it up -- optionally only include run files
+                resolve(
+                    zip(outputDir, !parameters.outputAll && 'run-*.tsd')
+                )
             }
         )
     })

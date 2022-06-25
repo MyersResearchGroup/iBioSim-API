@@ -13,11 +13,11 @@ import path from "path"
 import convert from "./conversion.js"
 import { getBaseFileName, processParameters, zip } from "./util.js"
 import analyze, { ParameterMap as AnalysisParameterMap } from "./analysis.js"
-import { log, logError } from "./logger.js"
+import { log, logError, logSuccess } from "./logger.js"
 
 
 export default function sync(app) {
-    
+
     // POST convert
     app.post('/sync/convert', async (req, res) => {
 
@@ -32,14 +32,16 @@ export default function sync(app) {
         log(`Active directory: ${workingDir}`, 'yellow', 'Conversion')
 
         try {
-            // convert -- short running, we'll await it
-            const conversionOutput = await convert(
-                sbol.path,
-                workingDir
-            )
+            // convert
+            const conversionOutput = await convert(sbol.path, {
+                workingDir,
+                writeOutputFile: false  // just need the stream
+            })
 
-            // pipe file to response
-            fsSync.createReadStream(conversionOutput).pipe(res)
+            logSuccess("Conversion successful.", "Conversion")
+
+            // pipe output stream to response
+            conversionOutput.pipe(res)
         }
         catch (error) {
             logError("Error during conversion. See response for details.", 'Conversion')
@@ -66,18 +68,14 @@ export default function sync(app) {
 
         try {
             // analyze
-            const analysisParameters = processParameters(req.body, AnalysisParameterMap)
-            const analysisOutput = await analyze(
-                input.path,
+            const analysisOutput = await analyze(input.path, {
                 workingDir,
-                analysisParameters
-            )
+                parameters: processParameters(req.body, AnalysisParameterMap)
+            })
 
-            // zip it up and send it off -- optionally only include run files
-            zip(
-                analysisOutput,
-                !analysisParameters.outputAll && 'run-*.tsd'
-            ).pipe(res)
+            logSuccess("Analysis successful.", "Analysis")
+
+            analysisOutput.pipe(res)
         }
         catch (error) {
             logError("Error during analysis. See response for details.", 'Analysis')
