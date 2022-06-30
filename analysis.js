@@ -28,6 +28,7 @@ export const ParameterMap = {
 export default function analyze(inputFile, {
     workingDir = os.tmpdir(),
     parameters = {},
+    environment
 }) {
 
     return new Promise(async (resolve, reject) => {
@@ -103,7 +104,7 @@ export default function analyze(inputFile, {
                 // zip it up -- optionally only include run files
                 resolve(
                     zip(outputDir, {
-                        glob: !parameters.outputAll && 'run-*.tsd'
+                        glob: !parameters.outputAll && '*.tsd'
                     })
                 )
             }

@@ -21,7 +21,7 @@ export default function sync(app) {
     // POST convert
     app.post('/sync/convert', async (req, res) => {
 
-        const { sbol, archive } = req.files
+        const { sbol } = req.files
 
         // validate SBOL file exists
         if (!sbol?.path)
@@ -56,7 +56,7 @@ export default function sync(app) {
     // POST analyze
     app.post('/sync/analyze', async (req, res) => {
 
-        const { input, archive } = req.files
+        const { input, environment } = req.files
 
         // validate SBML file exists
         if (!input)
@@ -70,7 +70,8 @@ export default function sync(app) {
             // analyze
             const analysisOutput = await analyze(input.path, {
                 workingDir,
-                parameters: processParameters(req.body, AnalysisParameterMap)
+                parameters: processParameters(req.body, AnalysisParameterMap),
+                environment
             })
 
             logSuccess("Analysis successful.", "Analysis")
