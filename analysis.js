@@ -36,7 +36,7 @@ export default function analyze(inputFile, {
         await mkdirTough(workingDir)
 
         // create output directory
-        const outputDir = path.join(workingDir, 'analysis')
+        const outputDir = path.join(workingDir, 'outputs')
         await mkdirTough(outputDir)
 
         // copy input file over to working dir
@@ -51,10 +51,10 @@ export default function analyze(inputFile, {
             log('File is SBOL. Converting to SBML.', 'grey', 'Analysis')
             try {
                 // convert
-                convertedFile = (await convert(copiedInputFile, {
+                convertedFile = await convert(copiedInputFile, {
                     workingDir,
-                    writeOutputFile: true
-                })).path
+                    resolveTopModulePath: true
+                })
             }
             catch (err) {
                 reject(err)

@@ -5,12 +5,11 @@ import fsSync from "fs"
 import path from "path"
 import { log } from "./logger.js"
 import { generateMetadata, mkdirTough, zip } from "./util.js"
-import { pipeline } from "stream/promises"
 
 
 export default function convert(inputFile, {
     workingDir = os.tmpdir(),
-    writeOutputFile = false
+    resolveTopModulePath = false
 }) {
 
     return new Promise(async (resolve, reject) => {
@@ -19,7 +18,7 @@ export default function convert(inputFile, {
         await mkdirTough(workingDir)
 
         // create output directory
-        const outputDir = path.join(workingDir, 'conversion')
+        const outputDir = path.join(workingDir, 'outputs')
         const outputFileName = 'output.sbol'
         await mkdirTough(outputDir)
 
@@ -45,10 +44,11 @@ export default function convert(inputFile, {
                 }
 
                 // find output files
-                const producedOutputFiles = (await fs.readdir(outputDir)).filter(fileName => path.extname(fileName) == '.xml')
+                const producedOutputFiles = (await fs.readdir(outputDir))
+                    .filter(fileName => path.extname(fileName) == '.xml')
 
                 // check if conversion produced anything
-                if(!producedOutputFiles.length) {
+                if (!producedOutputFiles.length) {
                     reject({
                         message: "Conversion didn't produce any SBML files.",
                         stdout
@@ -57,17 +57,32 @@ export default function convert(inputFile, {
                 }
 
                 // 1 file produced -- resolve stream to that file
-                if(producedOutputFiles.length == 1) {
+                if (producedOutputFiles.length == 1) {
                     log("One module produced; resolving to it.", "grey", "Conversion")
-                    resolve(fsSync.createReadStream(
-                        path.join(outputDir, producedOutputFiles[0])
+                    const fileToResolve = path.join(outputDir, producedOutputFiles[0])
+
+                    resolve(
+                        // either resolve just the path or a stream to it
+                        resolveTopModulePath ?
+                            fileToResolve :
+                            fsSync.createReadStream(fileToResolve)
+                    )
+                    return
+                }
+
+                // multiple files produced
+                log("Multiple modules produced; resolving archive.", "grey", "Conversion")
+
+                // if this option is set, just resolve a path to *_topModule.xml
+                if (resolveTopModulePath) {
+                    resolve(path.join(
+                        outputDir,
+                        producedOutputFiles.find(fileName => fileName.endsWith('_topModule.xml'))
                     ))
                     return
                 }
 
-                // multiple files produced -- zip and resolve stream to archive
-                log("Multiple modules produced; resolving archive.", "grey", "Conversion")
-
+                // otherwise, zip and resolve a stream to the archive
                 const archiveStream = zip(outputDir, {
                     glob: '*.xml',
                     finalize: false     // wait to finalize until we append the manifest
@@ -81,15 +96,7 @@ export default function convert(inputFile, {
                 // finalize archive
                 archiveStream.finalize()
 
-                // check if we should write the stream to a file
-                if(writeOutputFile) {
-                    const writeStream = fsSync.createWriteStream(path.join(outputDir, "conversionOutput.omex"))
-                    await pipeline(archiveStream, writeStream)
-                    resolve(writeStream)
-                    return
-                }
-                
-                // otherwise just resolve the stream
+                // resolve the stream
                 resolve(archiveStream)
             }
         )
