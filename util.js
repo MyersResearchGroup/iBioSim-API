@@ -64,10 +64,10 @@ export function processParameters(requestBody, parameterMap) {
 
 
 /*
-    Zipping
+    Zipping & Archiving
 */
 
-export function zip(dir, glob) {
+export function zip(dir, { glob, finalize = true }) {
     const archive = archiver('zip', {
         zlib: { level: 9 }  // compression level
     })
@@ -80,8 +80,25 @@ export function zip(dir, glob) {
         archive.glob(glob, { cwd: dir }) :
         archive.directory(dir, false)
 
-    archive.finalize()
+    finalize && archive.finalize()
     return archive
+}
+
+export function generateMetadata(sbmlFileNames) {
+    return {
+        manifest: `<?xml version="1.0" encoding="UTF-8"?>
+<omexManifest xmlns="http://identifiers.org/combine.specifications/omex-manifest">
+    <content location="." format="http://identifiers.org/combine.specifications/omex" />
+    <content location="./manifest.xml" format="http://identifiers.org/combine.specifications/omex-manifest" />
+    <content location="./metadata.rdf" format="http://identifiers.org/combine.specifications/omex-metadata" />
+${sbmlFileNames.map(fileName =>
+            `    <content location="./${fileName}" format="http://identifiers.org/combine.specifications/sbml.level-3.version-2.core" />`
+        ).join('\n')}
+</omexManifest>`,
+        metadata: `<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2006/vcard/ns#" />
+        `
+    }
 }
 
 

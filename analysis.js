@@ -102,7 +102,9 @@ export default function analyze(inputFile, {
 
                 // zip it up -- optionally only include run files
                 resolve(
-                    zip(outputDir, !parameters.outputAll && 'run-*.tsd')
+                    zip(outputDir, {
+                        glob: !parameters.outputAll && 'run-*.tsd'
+                    })
                 )
             }
         )

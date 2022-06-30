@@ -4,7 +4,7 @@ import fs from "fs/promises"
 import fsSync from "fs"
 import path from "path"
 import { log } from "./logger.js"
-import { mkdirTough, zip } from "./util.js"
+import { generateMetadata, mkdirTough, zip } from "./util.js"
 import { pipeline } from "stream/promises"
 
 
@@ -45,10 +45,10 @@ export default function convert(inputFile, {
                 }
 
                 // find output files
-                const potentialOutputFiles = (await fs.readdir(outputDir)).filter(fileName => path.extname(fileName) == '.xml')
+                const producedOutputFiles = (await fs.readdir(outputDir)).filter(fileName => path.extname(fileName) == '.xml')
 
                 // check if conversion produced anything
-                if(!potentialOutputFiles.length) {
+                if(!producedOutputFiles.length) {
                     reject({
                         message: "Conversion didn't produce any SBML files.",
                         stdout
@@ -57,10 +57,10 @@ export default function convert(inputFile, {
                 }
 
                 // 1 file produced -- resolve stream to that file
-                if(potentialOutputFiles.length == 1) {
+                if(producedOutputFiles.length == 1) {
                     log("One module produced; resolving to it.", "grey", "Conversion")
                     resolve(fsSync.createReadStream(
-                        path.join(outputDir, potentialOutputFiles[0])
+                        path.join(outputDir, producedOutputFiles[0])
                     ))
                     return
                 }
@@ -68,7 +68,18 @@ export default function convert(inputFile, {
                 // multiple files produced -- zip and resolve stream to archive
                 log("Multiple modules produced; resolving archive.", "grey", "Conversion")
 
-                const archiveStream = zip(outputDir, '*.xml')
+                const archiveStream = zip(outputDir, {
+                    glob: '*.xml',
+                    finalize: false     // wait to finalize until we append the manifest
+                })
+
+                // generate metadata for COMBINE archive
+                const { manifest, metadata } = generateMetadata(producedOutputFiles)
+                archiveStream.append(manifest, { name: 'manifest.xml' })
+                archiveStream.append(metadata, { name: 'metadata.rdf' })
+
+                // finalize archive
+                archiveStream.finalize()
 
                 // check if we should write the stream to a file
                 if(writeOutputFile) {
