@@ -5,7 +5,8 @@ import formData from "express-form-data"
 import morgan from "morgan"
 
 import { log } from "./logger.js"
-import sync from "./sync.js"
+import syncEndpoints from "./sync.js"
+import asyncEndpoints from "./async.js"
 
 
 // Set up server
@@ -32,9 +33,14 @@ app.get('/status', (req, res) => {
 
 
 // Synchronous endpoints
-//      POST convert
-//      POST analyze
-sync(app)
+//      POST /sync/convert
+//      POST /sync/analyze
+syncEndpoints(app)
+
+// Asynchronous endpoints
+//      POST /async/convert
+//      POST /async/analyze
+asyncEndpoints(app)
 
 
 // Make server listen

@@ -2,6 +2,8 @@ import fs from "fs/promises"
 import fsSync from "fs"
 import path from "path"
 import archiver from "archiver"
+import fetch from "node-fetch"
+import { log } from "./logger.js"
 
 
 /*
@@ -157,5 +159,24 @@ export function doResultsContainNaN(analysisDir) {
 
         // error handling
         stream.on('error', err => reject(err))
+    })
+}
+
+
+/*
+    Async handling
+*/
+
+export function executeCallback(callbackUrlTemplate, event, payload) {
+    return fetch(
+        callbackUrlTemplate.replace("{event}", event),
+        {
+            method: 'POST',
+            body: payload
+        }
+    )
+    .catch(error => {
+        log("Error attempting to hit callback:", "red", "Async")
+        log(error, "grey")
     })
 }

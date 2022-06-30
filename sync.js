@@ -1,13 +1,11 @@
 /*
 
     Synchronous endpoints -- not ideal for longer operations,
-    but platform agnostic. Fork coming in the future for an
-    asynchronous polling consumer solution for Azure.
+    but can be used directly with browser clients.
 
 */
 
 import os from "os"
-import fsSync from "fs"
 import path from "path"
 
 import convert from "./conversion.js"
@@ -24,8 +22,10 @@ export default function sync(app) {
         const { sbol } = req.files
 
         // validate SBOL file exists
-        if (!sbol?.path)
-            res.json({ error: "Must attach an SBOL file with key 'sbol'." })
+        if (!sbol?.path) {
+            res.status(500).json({ error: "Must attach an SBOL file with key 'sbol'." })
+            return
+        }
 
         // create working directory
         const workingDir = path.join(os.tmpdir(), `conversion-${getBaseFileName(sbol.path)}`)
@@ -35,7 +35,6 @@ export default function sync(app) {
             // convert
             const conversionOutput = await convert(sbol.path, {
                 workingDir,
-                writeOutputFile: false  // just need the stream
             })
 
             logSuccess("Conversion successful.", "Conversion")
@@ -59,8 +58,10 @@ export default function sync(app) {
         const { input, environment } = req.files
 
         // validate SBML file exists
-        if (!input)
-            res.json({ error: "Must attach an SBML file with key 'sbml'." })
+        if (!input) {
+            res.status(500).json({ error: "Must attach an SBML file with key 'sbml'." })
+            return
+        }
 
         // grab unique name we'll use from now on
         const workingDir = path.join(os.tmpdir(), `analysis-${getBaseFileName(input.path)}`)
