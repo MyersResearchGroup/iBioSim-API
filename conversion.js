@@ -4,12 +4,18 @@ import fs from "fs/promises"
 import fsSync from "fs"
 import path from "path"
 import { log } from "./logger.js"
-import { generateMetadata, mkdirTough, zip } from "./util.js"
+import { generateMetadata, mkdirTough, Parameter, zip } from "./util.js"
+
+
+export const ParameterMap = {
+    topModelId: new Parameter('tmID', 'string', 'topModel')
+}
 
 
 export default function convert(inputFile, {
     workingDir = os.tmpdir(),
-    resolveTopModulePath = false
+    parameters = {},
+    resolveTopModelPath = false
 }) {
 
     return new Promise(async (resolve, reject) => {
@@ -26,10 +32,18 @@ export default function convert(inputFile, {
         const copiedInputFile = path.join(workingDir, 'input' + path.extname(inputFile))
         await fs.copyFile(inputFile, copiedInputFile)
 
+        // flatten parameters down to string for command line
+        const paramString = Object.entries(parameters)
+            .filter(([key]) => !!ParameterMap[key]?.commandFlag)
+            .map(
+                ([key, val]) => `-${ParameterMap[key]?.commandFlag} ${val}`
+            )
+            .join(' ')
+
         // construct command
         const command = `java -jar /iBioSim/conversion/target/iBioSim-conversion-3.1.0-SNAPSHOT-jar-with-dependencies.jar ` +
             `-i -l SBML -p "http://www.async.utah.edu/" -r "https://synbiohub.programmingbiology.org/" ` +
-            `-o ${outputFileName} -oDir ${outputDir} ${copiedInputFile}`
+            `${paramString} -o ${outputFileName} -oDir ${outputDir} ${copiedInputFile}`
 
         // execute conversion
         log(`Executing conversion command:\n${command}`, 'grey', 'Conversion')
@@ -63,7 +77,7 @@ export default function convert(inputFile, {
 
                     resolve(
                         // either resolve just the path or a stream to it
-                        resolveTopModulePath ?
+                        resolveTopModelPath ?
                             fileToResolve :
                             fsSync.createReadStream(fileToResolve)
                     )
@@ -74,9 +88,10 @@ export default function convert(inputFile, {
                 log("Multiple modules produced; resolving archive.", "grey", "Conversion")
 
                 // if this option is set, just resolve a path to *_topModule.xml
-                if (resolveTopModulePath) {
+                if (resolveTopModelPath) {
                     resolve(path.join(
                         outputDir,
+                        producedOutputFiles.find(fileName => fileName == `${parameters.topModelId}.xml`) ||
                         producedOutputFiles.find(fileName => fileName.endsWith('_topModule.xml'))
                     ))
                     return

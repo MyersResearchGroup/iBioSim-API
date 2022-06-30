@@ -8,7 +8,7 @@
 import os from "os"
 import path from "path"
 
-import convert from "./conversion.js"
+import convert, { ParameterMap as ConversionParameterMap } from "./conversion.js"
 import { getBaseFileName, processParameters, zip } from "./util.js"
 import analyze, { ParameterMap as AnalysisParameterMap } from "./analysis.js"
 import { log, logError, logSuccess } from "./logger.js"
@@ -35,6 +35,7 @@ export default function sync(app) {
             // convert
             const conversionOutput = await convert(sbol.path, {
                 workingDir,
+                parameters: processParameters(req.body, ConversionParameterMap),
             })
 
             logSuccess("Conversion successful.", "Conversion")
@@ -57,9 +58,9 @@ export default function sync(app) {
 
         const { input, environment } = req.files
 
-        // validate SBML file exists
+        // validate input file exists
         if (!input) {
-            res.status(500).json({ error: "Must attach an SBML file with key 'sbml'." })
+            res.status(500).json({ error: "Must attach an SBML, SBOL, or OMEX file with key 'input'." })
             return
         }
 
@@ -72,6 +73,7 @@ export default function sync(app) {
             const analysisOutput = await analyze(input.path, {
                 workingDir,
                 parameters: processParameters(req.body, AnalysisParameterMap),
+                conversionParameters: processParameters(req.body, ConversionParameterMap),
                 environment
             })
 

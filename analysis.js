@@ -6,7 +6,6 @@ import fsSync from "fs"
 import path from "path"
 import convert from "./conversion.js"
 import { log, logSuccess, logWarning } from "./logger.js"
-import { pipeline } from "stream/promises"
 
 
 export const ParameterMap = {
@@ -20,7 +19,7 @@ export const ParameterMap = {
     relativeError: new Parameter('sErr', 'float'),
     seed: new Parameter('sd', 'integer'),
     runs: new Parameter('r', 'integer'),
-    simulationType: new Parameter('sim', 'string'),
+    simulationType: new Parameter('sim', 'lowercaseString'),
     outputAll: new Parameter(null, 'bool')
 }
 
@@ -28,6 +27,7 @@ export const ParameterMap = {
 export default function analyze(inputFile, {
     workingDir = os.tmpdir(),
     parameters = {},
+    conversionParameters = {},
     environment
 }) {
 
@@ -54,7 +54,8 @@ export default function analyze(inputFile, {
                 // convert
                 convertedFile = await convert(copiedInputFile, {
                     workingDir,
-                    resolveTopModulePath: true
+                    resolveTopModelPath: true,
+                    parameters: conversionParameters
                 })
             }
             catch (err) {

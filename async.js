@@ -10,7 +10,7 @@
 import os from "os"
 import path from "path"
 
-import convert from "./conversion.js"
+import convert, { ParameterMap as ConversionParameterMap } from "./conversion.js"
 import { executeCallback, getBaseFileName, processParameters, zip } from "./util.js"
 import analyze, { ParameterMap as AnalysisParameterMap } from "./analysis.js"
 import { log, logError, logSuccess } from "./logger.js"
@@ -42,6 +42,7 @@ export default function async(app) {
         // convert!
         convert(sbol.path, {
             workingDir,
+            parameters: processParameters(req.body, ConversionParameterMap),
         })
             .then(conversionOutput => {
                 logSuccess("Conversion successful.", "Conversion")
@@ -66,9 +67,9 @@ export default function async(app) {
 
         const { input, environment } = req.files
 
-        // validate SBML file exists
+        // validate input file exists
         if (!input) {
-            res.status(500).json({ error: "Must attach an SBML file with key 'sbml'." })
+            res.status(500).json({ error: "Must attach an SBML, SBOL, or OMEX file with key 'input'." })
             return
         }
 
@@ -86,6 +87,7 @@ export default function async(app) {
         analyze(input.path, {
             workingDir,
             parameters: processParameters(req.body, AnalysisParameterMap),
+            conversionParameters: processParameters(req.body, ConversionParameterMap),
             environment
         })
             .then(analysisOutput => {

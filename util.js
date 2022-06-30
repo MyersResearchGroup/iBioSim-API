@@ -36,32 +36,45 @@ export function getBaseFileName(fileName) {
 const ParserMap = {
     'float': parseFloat,
     'integer': parseInt,
-    'string': str => str.toLowerCase(),
+    'string': str => str,
+    'lowercaseString': str => str.toLowerCase(),
     'bool': str => str === 'true'
 }
 
 export class Parameter {
-    constructor(commandFlag, type = 'float', extraProcessor) {
+    constructor(commandFlag, type = 'float', defaultValue) {
         this.commandFlag = commandFlag
+        this.defaultValue = defaultValue
 
         this.process = paramVal => {
-            let result = ParserMap[type]?.(paramVal) ?? paramVal
-            return extraProcessor?.(result) ?? result
+            return ParserMap[type]?.(paramVal) ?? paramVal
         }
     }
 }
 
 export function processParameters(requestBody, parameterMap) {
+
     return Object.fromEntries(
-        Object.entries(requestBody)
-            .map(
-                ([key, val]) => parameterMap[key] && [
-                    key,
-                    parameterMap[key].process(val)
-                ]
-            )
-            .filter(entry => !!entry)
+        Object.entries(parameterMap)
+        .map(
+            ([key, paramDefinition]) => [
+                key,
+                requestBody[key] ?? paramDefinition.defaultValue
+            ]
+        )
+        .filter(([, entryValue]) => entryValue != null)
     )
+
+    // return Object.fromEntries(
+    //     Object.entries(requestBody)
+    //         .map(
+    //             ([key, val]) => parameterMap[key] && [
+    //                 key,
+    //                 parameterMap[key].process(val)
+    //             ]
+    //         )
+    //         .filter(entry => !!entry)
+    // )
 }
 
 
