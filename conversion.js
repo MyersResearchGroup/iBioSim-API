@@ -29,7 +29,7 @@ export default function convert(inputFile, {
         await mkdirTough(outputDir)
 
         // copy input file over to working dir
-        const copiedInputFile = path.join(workingDir, 'input' + path.extname(inputFile))
+        const copiedInputFile = path.join(workingDir, 'input.xml')
         await fs.copyFile(inputFile, copiedInputFile)
 
         // flatten parameters down to string for command line

@@ -42,7 +42,7 @@ export default function analyze(inputFile, {
 
         // copy input file over to working dir
         // TO DO: change .sbml files to .xml. iBioSim doesn't like .sbml files
-        const copiedInputFile = path.join(workingDir, 'input' + path.extname(inputFile))
+        const copiedInputFile = path.join(workingDir, 'input.xml')
         await fs.copyFile(inputFile, copiedInputFile)
 
         // convert input file if it's SBOL
