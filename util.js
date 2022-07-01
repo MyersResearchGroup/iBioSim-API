@@ -56,13 +56,13 @@ export function processParameters(requestBody, parameterMap) {
 
     return Object.fromEntries(
         Object.entries(parameterMap)
-        .map(
-            ([key, paramDefinition]) => [
-                key,
-                requestBody[key] ?? paramDefinition.defaultValue
-            ]
-        )
-        .filter(([, entryValue]) => entryValue != null)
+            .map(
+                ([key, paramDefinition]) => [
+                    key,
+                    requestBody[key] ?? paramDefinition.defaultValue
+                ]
+            )
+            .filter(([, entryValue]) => entryValue != null)
     )
 
     // return Object.fromEntries(
@@ -181,15 +181,17 @@ export function doResultsContainNaN(analysisDir) {
 */
 
 export function executeCallback(callbackUrlTemplate, event, payload) {
-    return fetch(
-        callbackUrlTemplate.replace("{event}", event),
-        {
-            method: 'POST',
-            body: payload
-        }
-    )
-    .catch(error => {
-        log("Error attempting to hit callback:", "red", "Async")
-        log(error, "grey")
+    const callbackUrl = callbackUrlTemplate.replace("{event}", event)
+
+    return fetch(callbackUrl, {
+        method: 'POST',
+        body: payload
     })
+        .then(res => {
+            log(`Sent output to callback URL: ${callbackUrl}`, "magenta", "Async")
+        })
+        .catch(error => {
+            log("Error attempting to hit callback:", "red", "Async")
+            log(error, "grey")
+        })
 }
