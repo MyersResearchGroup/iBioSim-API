@@ -59,7 +59,7 @@ export default function sync(app) {
         const { input, environment } = req.files
 
         // validate input file exists
-        if (!input) {
+        if (!input?.path) {
             res.status(500).json({ error: "Must attach an SBML, SBOL, or OMEX file with key 'input'." })
             return
         }
@@ -74,7 +74,7 @@ export default function sync(app) {
                 workingDir,
                 parameters: processParameters(req.body, AnalysisParameterMap),
                 conversionParameters: processParameters(req.body, ConversionParameterMap),
-                environment
+                environment: environment?.path
             })
 
             logSuccess("Analysis successful.", "Analysis")

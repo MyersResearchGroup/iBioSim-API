@@ -6,6 +6,8 @@ import fsSync from "fs"
 import path from "path"
 import convert from "./conversion.js"
 import { log, logSuccess, logWarning } from "./logger.js"
+import unzipper from "unzipper"
+import { pipeline } from "stream/promises"
 
 
 export const ParameterMap = {
@@ -45,6 +47,22 @@ export default function analyze(inputFile, {
         const copiedInputFile = path.join(workingDir, 'input' + path.extname(inputFile))
         await fs.copyFile(inputFile, copiedInputFile)
 
+        // extract environment into output dir
+        let sedmlFile
+        if (environment) {
+            await pipeline(
+                fsSync.createReadStream(environment),
+                unzipper.Extract({ path: outputDir })
+            )
+            log("Extracted environment.", "grey", "Analysis")
+
+            // search for SEDML file -- has top priority to be used
+            // for analysis
+            const sedmlFileName = (await fs.readdir(outputDir))
+                .find(fileName => path.extname(fileName) == '.sedml')
+            sedmlFileName && (sedmlFile = path.join(outputDir, sedmlFileName))
+        }
+
         // convert input file if it's SBOL
         // TO DO: add smarter detection of SBOL files
         let convertedFile
@@ -75,12 +93,15 @@ export default function analyze(inputFile, {
         // construct command
         const command = `java -jar /iBioSim/analysis/target/iBioSim-analysis-3.1.0-SNAPSHOT-jar-with-dependencies.jar ` +
             paramString +
-            ` -outDir ${outputDir} ${convertedFile || copiedInputFile}`
+            ` -outDir ${outputDir} ${sedmlFile || convertedFile || copiedInputFile}`
 
         // execute analysis
         log(`Executing analysis command:\n${command}`, 'grey', 'Analysis')
         exec(
             command,
+            {
+                cwd: outputDir
+            },
             async (error, stdout, stderr) => {
 
                 // handle errors from iBioSim
@@ -93,7 +114,8 @@ export default function analyze(inputFile, {
                 if (!await wasAnalysisSuccessful(outputDir)) {
                     reject({
                         message: "Analysis didn't produce expected output. This could be due to invalid parameters.",
-                        stdout
+                        stdout,
+                        stderr
                     })
                     return
                 }
