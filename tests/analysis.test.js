@@ -4,7 +4,7 @@ import unzipper from "unzipper"
 import FormData from "form-data"
 import { jest } from "@jest/globals"
 
-jest.setTimeout(60000)
+jest.setTimeout(600000)
 
 test("Single-module SBOL (.sbol) file with parameters", async () => {
 
