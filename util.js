@@ -191,7 +191,7 @@ export function executeCallback(callbackUrlTemplate, event, payload, json = fals
         }
     })
         .then(res => {
-            log(`Sent output to callback URL: ${callbackUrl}`, "magenta", "Async")
+            log(`Sent output to callback URL: ${callbackUrl}. Received ${res.status}.`, "magenta", "Async")
         })
         .catch(error => {
             log("Error attempting to hit callback:", "red", "Async")
