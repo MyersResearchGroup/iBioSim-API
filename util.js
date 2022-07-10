@@ -180,12 +180,15 @@ export function doResultsContainNaN(analysisDir) {
     Async handling
 */
 
-export function executeCallback(callbackUrlTemplate, event, payload) {
+export function executeCallback(callbackUrlTemplate, event, payload, json = false) {
     const callbackUrl = callbackUrlTemplate.replace("{event}", event)
 
     return fetch(callbackUrl, {
         method: 'POST',
-        body: payload
+        body: payload,
+        headers: {
+            'Content-Type': json ? 'application/json' : 'application/octet-stream'
+        }
     })
         .then(res => {
             log(`Sent output to callback URL: ${callbackUrl}`, "magenta", "Async")

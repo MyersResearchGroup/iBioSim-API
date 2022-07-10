@@ -52,7 +52,7 @@ export default function async(app) {
             })
             .catch(error => {
                 logError("Error during conversion. See response for details.", 'Conversion')
-                executeCallback(req.body.callback, 'error', { error })
+                executeCallback(req.body.callback, 'error', { error }, true)
             })
             .finally(() => {
                 // TO DO: clean up temp files
@@ -98,7 +98,7 @@ export default function async(app) {
             })
             .catch(error => {
                 logError("Error during analysis. See response for details.", 'Analysis')
-                executeCallback(req.body.callback, 'error', { error })
+                executeCallback(req.body.callback, 'error', { error }, true)
             })
             .finally(() => {
                 // TO DO: clean up temp files
