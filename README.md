@@ -65,6 +65,7 @@ Providing an environment archive and parameters is an undefined case and may pro
 | `environment`  | `file`   | Environment archive |
 | `topModelId`| `string` | Default: topModel<br />What to name the top model file in the case of multiple output files. Only valid for SBOL files. |
 | `simulationType` | `string` | Type of simulation to conduct. Valid options are `ode`, `hode`, `ssa`, `hssa`, `dfba`, `jode`, and `jssa`. |
+| `runs` | `integer` | Number of runs to simulate. |
 | `initialTime` | `integer` | Start time for the simulation |
 | `stopTime` | `integer` | Stop time for the simulation |
 | `outputTime` | `integer` | Time at which the simulation begins outputting data |
