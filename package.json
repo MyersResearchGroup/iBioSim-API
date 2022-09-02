@@ -16,11 +16,12 @@
     "express-form-data": "^2.0.18",
     "morgan": "^1.10.0",
     "node-fetch": "^3.2.6",
+    "stream-buffers": "^3.0.2",
     "unzipper": "^0.10.11"
   },
   "type": "module",
   "devDependencies": {
-    "jest": "^28.1.2",
-    "form-data": "^4.0.0"
+    "form-data": "^4.0.0",
+    "jest": "^28.1.2"
   }
 }

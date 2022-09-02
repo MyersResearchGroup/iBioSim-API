@@ -4,6 +4,8 @@ import path from "path"
 import archiver from "archiver"
 import fetch from "node-fetch"
 import { log } from "./logger.js"
+import { WritableStreamBuffer } from "stream-buffers"
+import { pipeline } from "stream/promises"
 
 
 /*
@@ -185,7 +187,7 @@ export function executeCallback(callbackUrlTemplate, event, payload, json = fals
 
     return fetch(callbackUrl, {
         method: 'POST',
-        body: payload,
+        body: json ? JSON.stringify(payload) : payload,
         headers: {
             'Content-Type': json ? 'application/json' : 'application/octet-stream'
         }
@@ -197,4 +199,11 @@ export function executeCallback(callbackUrlTemplate, event, payload, json = fals
             log("Error attempting to hit callback:", "red", "Async")
             log(error, "grey")
         })
+}
+
+
+export async function convertStreamToJSON(stream) {
+    const writableStreamBuffer = new WritableStreamBuffer()
+    await pipeline(stream, writableStreamBuffer)
+    return writableStreamBuffer.getContents()
 }

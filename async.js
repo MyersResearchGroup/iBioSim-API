@@ -11,7 +11,7 @@ import os from "os"
 import path from "path"
 
 import convert, { ParameterMap as ConversionParameterMap } from "./conversion.js"
-import { executeCallback, getBaseFileName, processParameters, zip } from "./util.js"
+import { convertStreamToJSON, executeCallback, getBaseFileName, processParameters, zip } from "./util.js"
 import analyze, { ParameterMap as AnalysisParameterMap } from "./analysis.js"
 import { log, logError, logSuccess } from "./logger.js"
 
@@ -44,11 +44,20 @@ export default function async(app) {
             workingDir,
             parameters: processParameters(req.body, ConversionParameterMap),
         })
-            .then(conversionOutput => {
+            .then(async conversionOutput => {
                 logSuccess("Conversion successful.", "Conversion")
 
                 // attach output stream to callback request
-                executeCallback(req.body.callback, 'complete', conversionOutput)
+                executeCallback(
+                    req.body.callback,
+                    'complete',
+                    
+                    // optionally send as JSON buffer
+                    req.body?.json ?
+                        await convertStreamToJSON(conversionOutput) :
+                        conversionOutput,
+                    !!req.body?.json
+                )
             })
             .catch(error => {
                 logError("Error during conversion. See response for details.", 'Conversion')
@@ -90,11 +99,20 @@ export default function async(app) {
             conversionParameters: processParameters(req.body, ConversionParameterMap),
             environment: environment?.path
         })
-            .then(analysisOutput => {
+            .then(async analysisOutput => {
                 logSuccess("Analysis successful.", "Analysis")
 
                 // attach output stream to callback request
-                executeCallback(req.body.callback, 'complete', analysisOutput)
+                executeCallback(
+                    req.body.callback,
+                    'complete',
+
+                    // optionally send as JSON buffer
+                    req.body?.json ?
+                        await convertStreamToJSON(analysisOutput) :
+                        analysisOutput,
+                    !!req.body?.json
+                )
             })
             .catch(error => {
                 logError("Error during analysis. See response for details.", 'Analysis')
