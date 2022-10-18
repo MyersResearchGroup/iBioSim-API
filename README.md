@@ -51,8 +51,8 @@ For testing, try using [Beeceptor](https://beeceptor.com/) to setup a mock callb
 📞 `POST /async/analyze`
 
 Runs an analysis on the uploaded design. The request must satisfy one of the following cases:
-- SBOL file (.sbol) with parameters
-- SBOL file (.sbol) with an environment archive
+- SBOL file (.sbol or .xml) with parameters
+- SBOL file (.sbol or .xml) with an environment archive
 - SBML file (.xml) with parameters
 - SBML file (.xml) with an environment archive
 - OMEX archive (.omex)
@@ -61,7 +61,7 @@ Providing an environment archive and parameters is an undefined case and may pro
 
 | Parameter | Type     | Description                       |
 | :-------- | :------- | :-------------------------------- |
-| **`input`**  | **`file`**   | **SBOL (.sbol), SBML (.xml), or OMEX (.omex) file to run analysis on.**|
+| **`input`**  | **`file`**   | **SBOL (.sbol or .xml), SBML (.xml), or OMEX (.omex) file to run analysis on.**|
 | `environment`  | `file`   | Environment archive |
 | `topModelId`| `string` | Default: topModel<br />What to name the top model file in the case of multiple output files. Only valid for SBOL files. |
 | `simulationType` | `string` | Type of simulation to conduct. Valid options are `ode`, `hode`, `ssa`, `hssa`, `dfba`, `jode`, and `jssa`. |

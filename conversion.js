@@ -25,7 +25,7 @@ export default function convert(inputFile, {
 
         // create output directory
         const outputDir = path.join(workingDir, 'outputs')
-        const outputFileName = 'output.sbol'
+        const outputFileName = 'output_sbol.xml'
         await mkdirTough(outputDir)
 
         // copy input file over to working dir
@@ -59,7 +59,7 @@ export default function convert(inputFile, {
 
                 // find output files
                 const producedOutputFiles = (await fs.readdir(outputDir))
-                    .filter(fileName => path.extname(fileName) == '.xml')
+                    .filter(fileName => fileName != outputFileName)
 
                 // check if conversion produced anything
                 if (!producedOutputFiles.length) {

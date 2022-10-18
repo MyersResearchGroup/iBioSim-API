@@ -8,6 +8,7 @@ import convert from "./conversion.js"
 import { log, logSuccess, logWarning } from "./logger.js"
 import unzipper from "unzipper"
 import { pipeline } from "stream/promises"
+import readline from "readline"
 
 
 export const ParameterMap = {
@@ -43,7 +44,6 @@ export default function analyze(inputFile, {
         await mkdirTough(outputDir)
 
         // copy input file over to working dir
-        // TO DO: change .sbml files to .xml. iBioSim doesn't like .sbml files
         const copiedInputFile = path.join(workingDir, 'input' + path.extname(inputFile))
         await fs.copyFile(inputFile, copiedInputFile)
 
@@ -63,10 +63,24 @@ export default function analyze(inputFile, {
             sedmlFileName && (sedmlFile = path.join(outputDir, sedmlFileName))
         }
 
+        // determine if file is SBOL
+        const isSbol = await new Promise(resolve => {
+            const rlInterface = readline.createInterface({
+                input: fsSync.createReadStream(inputFile),
+                crlfDelay: Infinity,
+            })
+            rlInterface.on("line", line => {
+                if(/<sbol/.test(line)) {
+                    resolve(true)
+                    rlInterface.close()
+                }
+            })
+            rlInterface.on("close", () => resolve(false))
+        })
+
         // convert input file if it's SBOL
-        // TO DO: add smarter detection of SBOL files
         let convertedFile
-        if (path.extname(inputFile).toLowerCase() == '.sbol') {
+        if (isSbol) {
             log('File is SBOL. Converting to SBML.', 'grey', 'Analysis')
             try {
                 // convert

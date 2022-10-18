@@ -1,6 +1,6 @@
 
-const singleModuleSBOL = "./tests/samples/Repressilator.sbol"
-const multiModuleSBOL = "./tests/samples/Circuit0x8E.sbol"
+const singleModuleSBOL = "./tests/samples/Repressilator.xml"
+const multiModuleSBOL = "./tests/samples/Circuit0x8E.xml"
 const sbml = "./tests/samples/SimpleReaction.sbml.xml"
 const omex = "./tests/samples/SimpleReaction.omex"
 
