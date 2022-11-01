@@ -96,6 +96,8 @@ export default function analyze(inputFile, {
             }
         }
 
+        log(`Using model: ${convertedFile}`, "gray", "Analysis")
+
         // flatten parameters down to string for command line
         const paramString = Object.entries(parameters)
             .filter(([key]) => !!ParameterMap[key]?.commandFlag)

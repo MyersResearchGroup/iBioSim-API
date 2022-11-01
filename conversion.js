@@ -8,7 +8,8 @@ import { generateMetadata, mkdirTough, Parameter, zip } from "./util.js"
 
 
 export const ParameterMap = {
-    topModelId: new Parameter('tmID', 'string', 'topModel')
+    topModelId: new Parameter('tmID', 'string', 'topModel'),
+    cello: new Parameter("c", "bool", "true"),
 }
 
 
@@ -57,62 +58,69 @@ export default function convert(inputFile, {
                     return
                 }
 
-                // find output files
-                const producedOutputFiles = (await fs.readdir(outputDir))
-                    .filter(fileName => fileName != outputFileName)
+                try {
+                    // find output files
+                    const producedOutputFiles = (await fs.readdir(outputDir))
+                        .filter(fileName => fileName != outputFileName)
 
-                // check if conversion produced anything
-                if (!producedOutputFiles.length) {
-                    reject({
-                        message: "Conversion didn't produce any SBML files.",
-                        stdout
+                    // check if conversion produced anything
+                    if (!producedOutputFiles.length) {
+                        reject({
+                            message: "Conversion didn't produce any SBML files.",
+                            stdout
+                        })
+                        return
+                    }
+
+                    // 1 file produced -- resolve stream to that file
+                    if (producedOutputFiles.length == 1) {
+                        log("One module produced; resolving to it.", "grey", "Conversion")
+                        const fileToResolve = path.join(outputDir, producedOutputFiles[0])
+
+                        resolve(
+                            // either resolve just the path or a stream to it
+                            resolveTopModelPath ?
+                                fileToResolve :
+                                fsSync.createReadStream(fileToResolve)
+                        )
+                        return
+                    }
+
+                    // multiple files produced
+                    log("Multiple modules produced; resolving archive.", "grey", "Conversion")
+
+                    // if this option is set, just resolve a path to *_topModule.xml
+                    if (resolveTopModelPath) {
+                        resolve(path.join(
+                            outputDir,
+                            producedOutputFiles.find(fileName => fileName == `${parameters.topModelId}.xml`) ||
+                            producedOutputFiles.find(fileName => fileName.endsWith('_topModule.xml')) ||
+                            producedOutputFiles.find(fileName => fileName.endsWith('_module.xml'))
+                        ))
+                        return
+                    }
+
+                    // otherwise, zip and resolve a stream to the archive
+                    const archiveStream = zip(outputDir, {
+                        glob: '*.xml',
+                        finalize: false     // wait to finalize until we append the manifest
                     })
-                    return
+
+                    // generate metadata for COMBINE archive
+                    const { manifest, metadata } = generateMetadata(producedOutputFiles)
+                    archiveStream.append(manifest, { name: 'manifest.xml' })
+                    archiveStream.append(metadata, { name: 'metadata.rdf' })
+
+                    // finalize archive
+                    archiveStream.finalize()
+
+                    // resolve the stream
+                    resolve(archiveStream)
                 }
-
-                // 1 file produced -- resolve stream to that file
-                if (producedOutputFiles.length == 1) {
-                    log("One module produced; resolving to it.", "grey", "Conversion")
-                    const fileToResolve = path.join(outputDir, producedOutputFiles[0])
-
-                    resolve(
-                        // either resolve just the path or a stream to it
-                        resolveTopModelPath ?
-                            fileToResolve :
-                            fsSync.createReadStream(fileToResolve)
-                    )
-                    return
+                catch (error) {
+                    console.error(error)
+                    reject(error)
                 }
-
-                // multiple files produced
-                log("Multiple modules produced; resolving archive.", "grey", "Conversion")
-
-                // if this option is set, just resolve a path to *_topModule.xml
-                if (resolveTopModelPath) {
-                    resolve(path.join(
-                        outputDir,
-                        producedOutputFiles.find(fileName => fileName == `${parameters.topModelId}.xml`) ||
-                        producedOutputFiles.find(fileName => fileName.endsWith('_topModule.xml'))
-                    ))
-                    return
-                }
-
-                // otherwise, zip and resolve a stream to the archive
-                const archiveStream = zip(outputDir, {
-                    glob: '*.xml',
-                    finalize: false     // wait to finalize until we append the manifest
-                })
-
-                // generate metadata for COMBINE archive
-                const { manifest, metadata } = generateMetadata(producedOutputFiles)
-                archiveStream.append(manifest, { name: 'manifest.xml' })
-                archiveStream.append(metadata, { name: 'metadata.rdf' })
-
-                // finalize archive
-                archiveStream.finalize()
-
-                // resolve the stream
-                resolve(archiveStream)
             }
         )
     })
